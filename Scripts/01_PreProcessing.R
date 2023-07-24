@@ -1,10 +1,18 @@
 ## Pre-processing of GLORIA data to predict Chl-a and TSS ####
 
+
+packages = c('data.table','dplyr','terra','mapview','httr','Metrics','geodrawr',
+             'svDialogs','rstac','wesanderson','PerformanceAnalytics', 'remotes',
+             'ggpmisc','gdalcubes','Metrics','randomForest','rasterVis','RColorBrewer')
+
+install.packages(packages)
+
+
 # loading require packages
 
 require(data.table)
 require(dplyr)
-require(terra)
+require(terra) 
 require(mapview)
 require(httr)
 require(Metrics)
@@ -50,26 +58,38 @@ if(dir.exists('Data/GLORIA_2022/') == FALSE) {
 
 ##### Analyzing GLORIA data #######
 
+#rrs remote sensing and reflectance
+
+
 meta_and_lab = fread("Data/GLORIA_2022/GLORIA_meta_and_lab.csv")
 rrs = fread("Data/GLORIA_2022/GLORIA_Rrs.csv")
 
 head(meta_and_lab)
 head(rrs)
 
+#350 (UV) to 900 nm
+dim(rrs)
+dim(meta_and_lab)
+
+
 ##### Plot for different concentrations #######
 
 # High Chl-a
-
+#16 stations with high chla
 meta_and_lab[meta_and_lab$Chla > 1000, 'GLORIA_ID']
 
-matplot(t(select(rrs, paste("Rrs_", 400:900, sep = ''))[rrs$GLORIA_ID == 'GID_7403',]), ylim = c(0,0.06),
+#visible bands btw 400-700
+#highest peak at 705 indicator of chla. Large diff from 670 to 705 also indicator.
+#common spectra for a eutrophic envt
+matplot(t(dplyr::select(rrs, paste("Rrs_", 400:900, sep = ''))[rrs$GLORIA_ID == 'GID_7403',]), ylim = c(0,0.06),
         x= c(400:900), pch = 20, xlab = '', ylab = '', type = 'l')
 
 # High TSS
 
 meta_and_lab[meta_and_lab$TSS > 1000, 'GLORIA_ID']
 
-matplot(t(select(rrs, paste("Rrs_", 400:900, sep = ''))[rrs$GLORIA_ID == 'GID_1805',]), ylim = c(0,0.06),
+#SS generally has linear increase with concentration, no absorbance bands like with chla
+matplot(t(dplyr::select(rrs, paste("Rrs_", 400:900, sep = ''))[rrs$GLORIA_ID == 'GID_1805',]), ylim = c(0,0.06),
         x= c(400:900), pch = 20, xlab = '', ylab = '', type = 'l')
 
 
@@ -77,7 +97,8 @@ matplot(t(select(rrs, paste("Rrs_", 400:900, sep = ''))[rrs$GLORIA_ID == 'GID_18
 
 meta_and_lab[meta_and_lab$aCDOM440 > 15, 'GLORIA_ID']
 
-matplot(t(select(rrs, paste("Rrs_", 400:900, sep = ''))[rrs$GLORIA_ID == 'GID_2468',]), ylim = c(0,0.0005),
+#cdom absorbs in low spectra
+matplot(t(dplyr::select(rrs, paste("Rrs_", 400:900, sep = ''))[rrs$GLORIA_ID == 'GID_2468',]), ylim = c(0,0.0005),
         x= c(400:900), pch = 20, xlab = '', ylab = '', type = 'l')
 
 
@@ -86,8 +107,10 @@ matplot(t(select(rrs, paste("Rrs_", 400:900, sep = ''))[rrs$GLORIA_ID == 'GID_24
 devtools::install_github("dmaciel123/BandSimulation")
 
 require(bandSimulation)
+library(tidyverse)
 
-spectra_formated = select(rrs, paste("Rrs_", 400:900, sep = '')) %>% t()
+#each row is a wavelength and each column is a station
+spectra_formated = dplyr::select(rrs, paste("Rrs_", 400:900, sep = '')) %>% t()
 
 head(spectra_formated[1:10,1:10])
 
@@ -98,12 +121,13 @@ MSI_sim = msi_simulation(spectra = spectra_formated,
 #It simulates for Sentinel-2A and Sentinel-2B and gives the results in a list.
 # Let's select only Sentinel-2A.
 
+#removing first column which is a wavelength
 MSI = MSI_sim$s2a[,-1] %>% t() %>% data.frame()
 
 head(MSI[,1:9])
 
 
-# Add names to a collumn
+# Add names to a column
 MSI$GLORIA_ID = row.names(MSI)
 
 head(MSI[,1:9])
@@ -119,13 +143,13 @@ meta.s = filter(meta_and_lab, GLORIA_ID == 'GID_207')
 
 ##### Plot example #####
 
-matplot(t(select(selection, paste("Rrs_", 400:900, sep = ''))[,]), ylim = c(0,0.05),
+matplot(t(select(selection, paste("Rrs_", 400:900, sep = ''))[,]), ylim = c(0,0.01),
         x= c(400:900), pch = 20, xlab = '', ylab = '')
 
 par(new=T)
 
 matplot(t(selection.s[,-10]), x= c(440,490,560,660,705,740,780,842,860), pch = 20,
-        ylim = c(0,0.05), xlim = c(400,900), col = 'red', cex = 2, xlab = 'Wavelength (nm)', 
+        ylim = c(0,0.01), xlim = c(400,900), col = 'red', cex = 2, xlab = 'Wavelength (nm)', 
         ylab = 'Rrs (sr-1)')
 
 legend('topleft', legend = c(paste("Chl-a = ", meta.s$Chla),
@@ -205,6 +229,7 @@ vector = vect(merged,
 
 # plot map
 
+#not working for me. error
 mapview(sf::st_as_sf(vector),  zcol = 'Chla')
 
 

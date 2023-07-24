@@ -18,6 +18,11 @@ require(terrainr)
 
 # What is STAC? https://stacspec.org/en
 
+#can use a hub from microsoft to process in R or python or other envt
+#provider of spatial data in the cloud
+#similar but not the same as google earth engine
+#planetarycomputer.microsoft.com
+
 # What we need to get the images?
 
 # 1) Collection and STAC provider (from where we gonna get that?)
@@ -30,10 +35,14 @@ stac_obj <- stac('https://planetarycomputer.microsoft.com/api/stac/v1/')
 
 
 dates = c("2021-08-10/2021-08-21")
+
+#ok to have complete cloud cover, but could set lower to limit images with high cloud cover
 CLOUD_COVER = 100
 
 BBOX = c(-46.638311, -23.766166, -46.638311, -23.766166) #xmin, ymin, xmax, ymax
 
+#some products have restrictions where an api key is needed, not this one.
+#just create an account to get api, still free
 it_obj <- stac_obj %>%
   stac_search(collections = "sentinel-2-l2a",
               bbox = BBOX,
@@ -45,10 +54,14 @@ it_obj <- stac_obj %>%
 
 print(it_obj)
 
-
+#cropping to area of interest, using utm coordinates
 crop_pt = ext(315000, 360000,7350000, 7380000) 
 
+#getting error here that path is too long, error at rast function.
+#still didn't work after starting over with just this script and loading packages in order.
 
+#response from host: (Not really helpful bc not a fix)
+#If so, right now we assume it's a Windows issue related to maximum path length, take a look at: https://www.quora.com/How-do-I-solve-this-error-The-file-names-would-be-too-long-for-the-destination-folder-You-can-shorten-the-file-name-and-try-again-or-try-a-location-that-has-a-shorter-path-without-shortening-the-path-in-windows-7
 blue <- paste0("/vsicurl/", it_obj$features[[1]]$assets$B02$href) %>% rast() %>% terra::crop(crop_pt)
 green <- paste0("/vsicurl/", it_obj$features[[1]]$assets$B03$href) %>% rast() %>% terra::crop(crop_pt)
 red <- paste0("/vsicurl/", it_obj$features[[1]]$assets$B04$href) %>% rast() %>% terra::crop(crop_pt)

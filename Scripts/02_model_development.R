@@ -60,7 +60,7 @@ abline(0,1)
 
 ###### Create a random forest algorithm for Chl-a
 
-
+#blue green red bands + ndci to predict chla
 chla.rf = randomForest(Chla~ x490+x560+x660+x705+NDCI, data = train, 
                        ntree = 200, mtry = 4, importance = T)
 

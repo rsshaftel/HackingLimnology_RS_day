@@ -25,6 +25,7 @@ it_obj <- s_obj %>%
   
   items_sign(sign_fn = sign_planetary_computer())
 
+print(it_obj)
 
 # Select the assets
 
@@ -48,7 +49,9 @@ colr <- colorRampPalette(rev(brewer.pal(11, 'RdBu')))
 
 ## Save TIFS
 
-RES = raster_cube(col, v) %>% #, mask = image_mask("SCL", values = 6, invert = T)) %>% 
+#shouldn't have run this, already in github, takes awhile to run 10-15 minutes
+RES = raster_cube(col, v) %>% 
+  #, mask = image_mask("SCL", values = 6, invert = T)) %>% 
   select_bands(assets) %>% 
   apply_pixel("(B05-B04)/(B05+B04)+1", "NDCI", keep_bands = T) %>% 
   write_tif(dir = 'Outputs/TimeSeries')
@@ -123,6 +126,7 @@ names(chla.res) = dates
 colr <- colorRampPalette(rev(brewer.pal(11, 'RdBu')))
 
 
+#this caused R to crash!
 levelplot(raster::stack(chla.res),col.regions = colr, maxpixels = 1e6, main = "Chlorophyll-a Concentration (ug/L)",
           colorkey=list(
             space='bottom',                   # plot legend at bottom
@@ -131,7 +135,7 @@ levelplot(raster::stack(chla.res),col.regions = colr, maxpixels = 1e6, main = "C
 
 
 
-
+#this ran, pretty awesome graphic! This would be fantastic for ST predictions.
 saveGIF({
   for(i in c(1:dim(chla.res)[3])){
     
